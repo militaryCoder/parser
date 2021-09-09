@@ -1,26 +1,25 @@
 #pragma once
 
-#include <stdio.h>
+#include <string>
 
 namespace fs
 {
-    enum class Mode : const char *
+    using Str = std::string;
+    enum class Mode
     {
-        Read = "r",
-        Write = "w"
+        Read,
+        Write
     };
 
     class File
     {
-        FILE *file_;
-        std::string name_;
+        Str name_;
     public:
         File(const char *filename, Mode);
-        File(const std::string &filename, Mode);
+        File(const Str &filename, Mode);
         char readChar();
-        std::string readLine();
-        bool isOpened() const;
+        Str readLine();
         bool isValid() const;
-        ~File();
+        ~File() {};
     };
 }
