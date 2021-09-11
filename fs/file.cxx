@@ -1,11 +1,11 @@
 #include "file.hxx"
 
-#include <string.h>
-
+#include <cstdint>
 #include <iostream>
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <Windows.h>
+    using WndErrorCode = DWORD;
 #endif
 
 namespace fs
@@ -16,8 +16,7 @@ namespace fs
         : name_(filename)
     {
         const DWORD NON_SHARABLE = 0;
-        const char *mode = m == Mode::Read ? "r" : "w";
-        const auto openMode = 0 == strcmp("r", mode) ? GENERIC_READ : GENERIC_WRITE;
+        const auto openMode = Mode::Read == m ? GENERIC_READ : GENERIC_WRITE;
         HANDLE fileHandle = CreateFile(filename,
                                        openMode,
                                        NON_SHARABLE,
@@ -25,6 +24,47 @@ namespace fs
                                        OPEN_EXISTING,
                                        FILE_ATTRIBUTE_NORMAL,
                                        nullptr);
+        
+        if (nullptr != fileHandle)
+        {
+            LARGE_INTEGER fileSize;
+            GetFileSizeEx(fileHandle, &fileSize);
+            const long long llsize = fileSize.QuadPart;
+            DWORD bytesRead;
+            buf_ = new char[llsize];
+            const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, llsize, &bytesRead, nullptr);
+            if (!readSuccessfully)
+            {
+                std::cerr << "Could not read \"" << name_ << "\"\n";
+                std::cerr << "Read " << bytesRead << "bytes.\n";
+                std::cerr << "Reason: ";
+                const WndErrorCode err = GetLastError();
+                switch(err)
+                {
+                    case ERROR_INSUFFICIENT_BUFFER:
+                        std::cerr << "insufficient buffer.\n";
+                        break;
+                    case ERROR_INVALID_USER_BUFFER:
+                        std::cerr << "invalid user buffer.\n"; 
+                        break;
+                    case ERROR_NOT_ENOUGH_MEMORY:
+                        std::cerr << "not enough memory.\n";
+                        break;
+                    case ERROR_BROKEN_PIPE:
+                        std::cerr << "broken pipe.\n";
+                        break;
+                    default:
+                        std::cerr << "unknown reason.\n";
+                }
+            }
+            caretPos_ = 0;
+        }
+    }
+
+    File::~File()
+    {
+        if (buf_)
+            delete[] buf_;
     }
 
 #else
