@@ -8,7 +8,8 @@ namespace fs
     enum class Mode
     {
         Read,
-        Write
+        Write,
+        ReadWrite
     };
 
     class File

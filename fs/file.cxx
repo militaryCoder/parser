@@ -1,5 +1,7 @@
 #include "file.hxx"
 
+#include <stx/panic.h>
+
 #include <cstdint>
 #include <iostream>
 
@@ -12,13 +14,34 @@ namespace fs
 {
 #if defined(_WIN32) || defined(_WIN64)
 
+    DWORD convertAccessModeToWndFlag(Mode m)
+    {
+        switch (static_cast<int>(m))
+        {
+            case static_cast<int>(Mode::Read):
+                return GENERIC_READ;
+            case static_cast<int>(Mode::Write):
+                return GENERIC_WRITE;
+            default:
+                return GENERIC_READ | GENERIC_WRITE;
+        }
+    }
+
+    long long getWndFileSize(HANDLE fileHandle)
+    {
+        LARGE_INTEGER fsz;
+        GetFileSizeEx(fileHandle, &fsz);
+
+        return fsz.QuadPart;
+    }
+
     File::File(const char *filename, Mode m)
         : name_(filename)
     {
         const DWORD NON_SHARABLE = 0;
-        const auto openMode = Mode::Read == m ? GENERIC_READ : GENERIC_WRITE;
+        const DWORD accessMode = convertAccessModeToWndFlag(m);
         HANDLE fileHandle = CreateFile(filename,
-                                       openMode,
+                                       accessMode,
                                        NON_SHARABLE,
                                        nullptr,
                                        OPEN_EXISTING,
@@ -27,16 +50,13 @@ namespace fs
         
         if (nullptr != fileHandle)
         {
-            LARGE_INTEGER fileSize;
-            GetFileSizeEx(fileHandle, &fileSize);
-            const long long llsize = fileSize.QuadPart;
+            const long long fileSize = getWndFileSize(fileHandle);
             DWORD bytesRead;
-            buf_ = new char[llsize];
-            const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, llsize, &bytesRead, nullptr);
-            if (!readSuccessfully)
+            buf_ = new char[fileSize];
+            const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, fileSize, &bytesRead, nullptr);
+            if (!readSuccessful)
             {
                 std::cerr << "Could not read \"" << name_ << "\"\n";
-                std::cerr << "Read " << bytesRead << "bytes.\n";
                 std::cerr << "Reason: ";
                 const WndErrorCode err = GetLastError();
                 switch(err)
@@ -59,6 +79,11 @@ namespace fs
             }
             caretPos_ = 0;
         }
+    }
+
+    char File::readChar()
+    {
+        return buf_[caretPos_++];
     }
 
     File::~File()
