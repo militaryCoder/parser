@@ -1,4 +1,4 @@
-#include "path.hxx"
+#include "path.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>

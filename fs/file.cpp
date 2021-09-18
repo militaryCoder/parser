@@ -1,9 +1,10 @@
-#include "file.hxx"
+#include "file.hpp"
 
 #include <stx/panic.h>
 
 #include <cstdint>
 #include <iostream>
+#include <sstream>
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <Windows.h>
@@ -36,8 +37,7 @@ namespace fs
     }
 
     File::File(const char *filename, Mode m)
-        : name_(filename)
-    {
+        : name_(filename) {
         const DWORD NON_SHARABLE = 0;
         const DWORD accessMode = convertAccessModeToWndFlag(m);
         HANDLE fileHandle = CreateFile(filename,
@@ -48,19 +48,17 @@ namespace fs
                                        FILE_ATTRIBUTE_NORMAL,
                                        nullptr);
         
-        if (nullptr != fileHandle)
-        {
+        if (nullptr != fileHandle) {
             const long long fileSize = getWndFileSize(fileHandle);
             DWORD bytesRead;
             buf_ = new char[fileSize];
             const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, fileSize, &bytesRead, nullptr);
-            if (!readSuccessful)
-            {
+            if (!readSuccessful) {
                 std::cerr << "Could not read \"" << name_ << "\"\n";
                 std::cerr << "Reason: ";
                 const WndErrorCode err = GetLastError();
-                switch(err)
-                {
+                // TODO: mayber should replace std::cerr's with some logger stuff
+                switch(err) {
                     case ERROR_INSUFFICIENT_BUFFER:
                         std::cerr << "insufficient buffer.\n";
                         break;
@@ -77,43 +75,39 @@ namespace fs
                         std::cerr << "unknown reason.\n";
                 }
             }
-            caretPos_ = 0;
+            caret_ = 0;
         }
-    }
-
-    char File::readChar()
-    {
-        return buf_[caretPos_++];
-    }
-
-    File::~File()
-    {
-        if (buf_)
-            delete[] buf_;
     }
 
 #else
 
+    // TODO: should be reading into buffer
     File::File(const char *filename, Mode m)
-        : name_(filename)
-    {
+        : name_(filename) {
         file_ = fopen(name_, static_cast<const char *>(m));
     }
     
-    bool File::isValid() const
-    {
+    bool File::isValid() const {
         return nullptr != file_;
     }
 
-    char readChar()
-    {
-        const int read = fgetc(file_);
-        if (EOF != read)
-            return static_cast<char>(read);
-        else if (feof(file_))
-            throw EOFException("EOF reached.");
-        else throw BadFileAccessException("Unknown error occured while reading file.");
+#endif
+
+    char File::readChar() {
+        return buf_[caret_++];
     }
 
-#endif
+    Str File::readLine() {
+        std::stringstream ss;
+        do {
+            ss << buf_[caret_++];
+        } while ('\n' != buf_[caret_]);
+
+        return ss.str();
+    }
+
+    File::~File() {
+        if (buf_)
+            delete[] buf_;
+    }
 }

@@ -17,7 +17,7 @@ namespace fs
         Str name_;
         size_t length_;
         char *buf_ = nullptr;
-        size_t caretPos_;
+        size_t caret_;
     public:
         File(const char *filename, Mode);
         File(const Str &filename, Mode);
