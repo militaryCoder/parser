@@ -95,10 +95,10 @@ namespace fs
     File::File(const char *filename, Mode &&m)
         : name_(filename) {
         const char *accessMode = Mode::Read == std::move(m) ? "r" : "w";
-        file_ = fopen(name_, accessMode);
-        if (file_) {
-            length_ = getFileSize(file_);
-            const size_t readCount = fread((void *)buf_, sizeof(char), length_, file_);
+        buf_ = fopen(name_, accessMode);
+        if (buf_) {
+            length_ = getFileSize(buf_);
+            const size_t readCount = fread((void *)buf_, sizeof(char), length_, buf_);
             if (!(length_ == readCount)) {
                 std::cerr << "File was read partially.\n";
             }
