@@ -54,7 +54,6 @@ namespace fs
             const long long fileSize = getWndFileSize(fileHandle);
             DWORD bytesRead;
             buf_ = new char[fileSize];
-            length_ = fileSize;
             const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, fileSize, &bytesRead, nullptr);
             if (!readSuccessful) {
                 std::cerr << "Could not read \"" << name_ << "\"\n";
@@ -99,10 +98,10 @@ namespace fs
         const char *accessMode = Mode::Read == std::move(m) ? "r" : "w";
         FILE *file = fopen(name_.c_str(), accessMode);
         if (file) {
-            length_ = getFileSize(file);
-            buf_ = new char[length_];
-            const size_t readCount = fread((void *)buf_, sizeof(char), length_, file);
-            if (!(length_ == readCount)) {
+            const size_t fsize = getFileSize(file);
+            buf_ = new char[fsize];
+            const size_t readCount = fread((void *)buf_, sizeof(char), fsize, file);
+            if (!(fsize == readCount)) {
                 std::cerr << "File was read partially.\n";
             }
         }

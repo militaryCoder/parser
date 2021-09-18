@@ -15,7 +15,6 @@ namespace fs
     class File
     {
         Str name_;
-        size_t length_;
         char *buf_ = nullptr;
         size_t caret_ = 0;
     public:
