@@ -36,10 +36,10 @@ namespace fs
         return fsz.QuadPart;
     }
 
-    File::File(const char *filename, Mode m)
+    File::File(const char *filename, Mode &&m)
         : name_(filename) {
         const DWORD NON_SHARABLE = 0;
-        const DWORD accessMode = convertAccessModeToWndFlag(m);
+        const DWORD accessMode = convertAccessModeToWndFlag(std::move(m));
         HANDLE fileHandle = CreateFile(filename,
                                        accessMode,
                                        NON_SHARABLE,
@@ -75,9 +75,10 @@ namespace fs
                         std::cerr << "unknown reason.\n";
                 }
             }
-            caret_ = 0;
         }
     }
+    File::File(const Str &filename, Mode &&m)
+        : File(filename.c_str(), std::move(m)) {}
 
 #else
 

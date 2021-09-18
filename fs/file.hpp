@@ -17,10 +17,10 @@ namespace fs
         Str name_;
         size_t length_;
         char *buf_ = nullptr;
-        size_t caret_;
+        size_t caret_ = 0;
     public:
-        File(const char *filename, Mode);
-        File(const Str &filename, Mode);
+        File(const char *filename, Mode &&);
+        File(const Str &filename, Mode &&);
         char readChar();
         Str readLine();
         bool isValid() const;
