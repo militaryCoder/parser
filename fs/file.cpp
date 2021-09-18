@@ -52,6 +52,7 @@ namespace fs
             const long long fileSize = getWndFileSize(fileHandle);
             DWORD bytesRead;
             buf_ = new char[fileSize];
+            length_ = fileSize;
             const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, fileSize, &bytesRead, nullptr);
             if (!readSuccessful) {
                 std::cerr << "Could not read \"" << name_ << "\"\n";

@@ -23,7 +23,6 @@ namespace fs
         File(const Str &filename, Mode &&);
         char readChar();
         Str readLine();
-        bool isValid() const;
         ~File();
     };
 }
