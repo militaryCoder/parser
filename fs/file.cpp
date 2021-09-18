@@ -9,6 +9,8 @@
 #if defined(_WIN32) || defined(_WIN64)
     #include <Windows.h>
     using WndErrorCode = DWORD;
+#else
+    #include <stdio.h>
 #endif
 
 namespace fs
@@ -95,10 +97,11 @@ namespace fs
     File::File(const char *filename, Mode &&m)
         : name_(filename) {
         const char *accessMode = Mode::Read == std::move(m) ? "r" : "w";
-        buf_ = fopen(name_, accessMode);
-        if (buf_) {
-            length_ = getFileSize(buf_);
-            const size_t readCount = fread((void *)buf_, sizeof(char), length_, buf_);
+        FILE *file = fopen(name_.c_str(), accessMode);
+        if (file) {
+            length_ = getFileSize(file);
+            buf_ = new char[length_];
+            const size_t readCount = fread((void *)buf_, sizeof(char), length_, file);
             if (!(length_ == readCount)) {
                 std::cerr << "File was read partially.\n";
             }
