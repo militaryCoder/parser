@@ -83,16 +83,33 @@ namespace fs
 
 #else
 
-    // TODO: should be reading into buffer
-    File::File(const char *filename, Mode m)
-        : name_(filename) {
-        file_ = fopen(name_, static_cast<const char *>(m));
-    }
-    
-    bool File::isValid() const {
-        return nullptr != file_;
+    size_t getFileSize(FILE *f) {
+        const long offset = 0l;
+        fseek(f, offset, SEEK_END);
+        const size_t size = ftell(f);
+        rewind(f);
+
+        return size;
     }
 
+    File::File(const char *filename, Mode &&m)
+        : name_(filename) {
+        const char *accessMode = Mode::Read == std::move(m) ? "r" : "w";
+        file_ = fopen(name_, accessMode);
+        if (file_) {
+            length_ = getFileSize(file_);
+            const size_t readCount = fread((void *)buf_, sizeof(char), length_, file_);
+            if (!(length_ == readCount)) {
+                std::cerr << "File was read partially.\n";
+            }
+        }
+        else {
+            std::cerr << "An error occured while reading \"" << name_ << "\".";
+        }
+    }
+    File::File(const Str &filename, Mode &&m)
+        : File(filename.c_str(), std::move(m)) {}
+    
 #endif
 
     char File::readChar() {
