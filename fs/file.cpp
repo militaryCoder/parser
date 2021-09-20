@@ -59,7 +59,7 @@ namespace fs
                 std::cerr << "Could not read \"" << name_ << "\"\n";
                 std::cerr << "Reason: ";
                 const WndErrorCode err = GetLastError();
-                // TODO: mayber should replace std::cerr's with some logger stuff
+                // TODO: should replace std::cerr's with some logger stuff
                 switch(err) {
                     case ERROR_INSUFFICIENT_BUFFER:
                         std::cerr << "insufficient buffer.\n";
@@ -123,8 +123,13 @@ namespace fs
         do {
             ss << buf_[caret_++];
         } while ('\n' != buf_[caret_]);
+        caret_++;
 
         return ss.str();
+    }
+
+    char File::peekChar() {
+        return buf_[caret_ + 1];
     }
 
     File::~File() {

@@ -21,6 +21,7 @@ namespace fs
         File(const char *filename, Mode &&);
         File(const Str &filename, Mode &&);
         char readChar();
+        char peekChar();
         Str readLine();
         ~File();
     };
