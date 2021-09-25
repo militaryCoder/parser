@@ -3,11 +3,15 @@
 const auto READ_MODE = fs::Mode::Read;
 
 InputReader::InputReader(const char *filename)
-    : file_(new fs::File(filename, READ_MODE)) {}
+    : file_(std::make_unique<fs::File>(filename, fs::Mode::Read)) {}
+
 InputReader::InputReader(const Str &filename)
-    : file_(new fs::File(filename, READ_MODE)) {}
+    : file_(std::make_unique<fs::File>(filename, fs::Mode::Read)) {}
+
 InputReader::InputReader(Str &&filename)
-    : file_(new fs::File(std::move(filename), READ_MODE)) {}
+    : file_(std::make_unique<fs::File>(std::move(filename), fs::Mode::Read)) {}
+
+InputReader::~InputReader() {}
 
 char InputReader::consume() {
     return file_->readChar();
