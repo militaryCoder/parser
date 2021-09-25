@@ -13,14 +13,13 @@
     #include <stdio.h>
 #endif
 
-namespace fs
-{
+typedef long long llong;
+
+namespace fs {
 #if defined(_WIN32) || defined(_WIN64)
 
-    DWORD convertAccessModeToWndFlag(Mode m)
-    {
-        switch (static_cast<int>(m))
-        {
+    DWORD convertAccessModeToWndFlag(Mode m) {
+        switch (static_cast<int>(m)) {
             case static_cast<int>(Mode::Read):
                 return GENERIC_READ;
             case static_cast<int>(Mode::Write):
@@ -30,8 +29,7 @@ namespace fs
         }
     }
 
-    long long getWndFileSize(HANDLE fileHandle)
-    {
+    long long getWndFileSize(HANDLE fileHandle) {
         LARGE_INTEGER fsz;
         GetFileSizeEx(fileHandle, &fsz);
 
@@ -50,33 +48,38 @@ namespace fs
                                        FILE_ATTRIBUTE_NORMAL,
                                        nullptr);
         
-        if (nullptr != fileHandle) {
-            const long long fileSize = getWndFileSize(fileHandle);
+        if (INVALID_HANDLE_VALUE != fileHandle) {
+            length_ = getWndFileSize(fileHandle);
             DWORD bytesRead;
-            buf_ = new char[fileSize];
-            const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, fileSize, &bytesRead, nullptr);
+            buf_ = new char[length_];
+            const bool readSuccessful = ReadFile(fileHandle, (void *)buf_, length_, &bytesRead, nullptr);
             if (!readSuccessful) {
-                std::cerr << "Could not read \"" << name_ << "\"\n";
-                std::cerr << "Reason: ";
+                std::stringstream errss;
+                errss << "Could not read \"" << name_ << "\"\n";
+                errss << "Reason: ";
                 const WndErrorCode err = GetLastError();
-                // TODO: should replace std::cerr's with some logger stuff
                 switch(err) {
                     case ERROR_INSUFFICIENT_BUFFER:
-                        std::cerr << "insufficient buffer.\n";
+                        errss << "insufficient buffer.";
                         break;
                     case ERROR_INVALID_USER_BUFFER:
-                        std::cerr << "invalid user buffer.\n"; 
+                        errss << "invalid user buffer.";
                         break;
                     case ERROR_NOT_ENOUGH_MEMORY:
-                        std::cerr << "not enough memory.\n";
+                        errss << "not enough memory.";
                         break;
                     case ERROR_BROKEN_PIPE:
-                        std::cerr << "broken pipe.\n";
+                        errss << "broken pipe.";
                         break;
                     default:
-                        std::cerr << "unknown reason.\n";
+                        errss << "unknown reason.";
                 }
+
+                stx::panic(errss.str());
             }
+        }
+        else {
+            stx::panic("Cannot read file \"" + name_ + "\": no such file or directory.");
         }
     }
     File::File(const Str &filename, Mode &&m)
@@ -98,15 +101,15 @@ namespace fs
         const char *accessMode = Mode::Read == std::move(m) ? "r" : "w";
         FILE *file = fopen(name_.c_str(), accessMode);
         if (file) {
-            const size_t fsize = getFileSize(file);
-            buf_ = new char[fsize];
-            const size_t readCount = fread((void *)buf_, sizeof(char), fsize, file);
+            length_ = getFileSize(file);
+            buf_ = new char[length_];
+            const size_t readCount = fread((void *)buf_, sizeof(char), length_, file);
             if (!(fsize == readCount)) {
-                std::cerr << "File was read partially.\n";
+                stx::panic("File was read partially.\n");
             }
         }
         else {
-            std::cerr << "An error occured while reading \"" << name_ << "\".";
+            stx::panic("An error occured while reading \"" + name_ + "\".");
         }
     }
     File::File(const Str &filename, Mode &&m)
@@ -131,9 +134,23 @@ namespace fs
     char File::peekChar() {
         return buf_[caret_ + 1];
     }
+    char File::watch() const {
+        return buf_[caret_];
+    }
+
+    void File::rewind(size_t offset) {
+        if (static_cast<llong>(caret_) - static_cast<llong>(offset) < 0) {
+            caret_ = 0;
+        }
+        else caret_ -= offset;
+    }
 
     File::~File() {
         if (buf_)
             delete[] buf_;
     }
-}
+
+    bool eof(const File &f) {
+        return f.caret_ >= f.length_;
+    }
+} // namespace fs
