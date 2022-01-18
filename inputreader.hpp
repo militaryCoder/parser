@@ -27,5 +27,5 @@ public:
     InputReader(Str &&filename);
     ~InputReader();
 
-    char consume();
+    Vec<TokenRawView> tokenize();
 };

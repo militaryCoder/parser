@@ -1,7 +1,5 @@
 #include "inputreader.hpp"
 
-const auto READ_MODE = fs::Mode::Read;
-
 InputReader::InputReader(const char *filename)
     : file_(std::make_unique<fs::File>(filename, fs::Mode::Read)) {}
 
@@ -19,4 +17,23 @@ char InputReader::consume() {
 
 char InputReader::peek() {
     return file_->peekChar();
+}
+char InputReader::watch() {
+    return file_->watch();
+}
+
+Vec<TokenRawView> InputReader::tokenize() {
+    const char SPACE = ' ';
+
+    Vec<TokenRawView> outSeq;
+    Str tokenBuf;
+    while (!eof(*file_)) {
+        // getting rid of trailing spaces
+        const char curr = consume();
+        if (std::isalpha(curr)) {
+
+        }
+    }
+
+    return outSeq;
 }
